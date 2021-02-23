@@ -14,55 +14,93 @@ class Bcolors:
 
 
 class Spell:
+    """A spell designed for use as a combat action.
+
+    Keeps track of
+    the name of a spell,
+    two integers delimiting a range of damage,
+    the cost of a spell.
+    """
     def __init__(self, name: str, damage_low: int, damage_high: int, cost: int):
+        """The constructor."""
         self.name = name
         self.damage_low = damage_low
         self.damage_high = damage_high
         self.cost = cost
 
     def get_damage_low(self):
+        """Returns the lower boundary of damage range."""
         return self.damage_low
 
     def get_damage_high(self):
+        """Returns the upper boundary of damage range."""
         return self.damage_high
 
     def get_cost(self):
+        """Returns the cost of a spell."""
         return self.cost
 
 
 class Weapon:
+    """A weapon designed for use as a combat action.
+
+    Keeps track of
+    the name of a weapon,
+    two integers delimiting a range of damage,
+    the amount of hands needed to use the weapon.
+    """
     def __init__(self, name: str, damage_low: int, damage_high: int, hands: int):
+        """The constructor."""
         self.name = name
         self.damage_low = damage_low
         self.damage_high = damage_high
         self.hands = hands
 
     def get_damage_low(self):
+        """Returns the lower boundary of damage range."""
         return self.damage_low
 
     def get_damage_high(self):
+        """Returns the upper boundary of damage range."""
         return self.damage_high
 
     def get_hands(self):
+        """Returns amount of hands needed to wield a weapon."""
         return self.hands
 
 
 class Actions:
+    """Keeps track of all the actions a character can use."""
     def __init__(self, *actions):
+        """The constructor."""
         self.actions = []
         for action in actions:
             self.add_action(action)
 
     def add_action(self, action: Spell or Weapon):
+        """Adds an action to the end of the array."""
         self.actions.append(action)
 
     def get_action(self, index: int):
+        """Returns the action at the given index from the array."""
         return self.actions[index]
 
 
 class Character:
+    """A character which can participate in combat.
+
+    Keeps track of
+    the name of a character,
+    their health points and maxhp,
+    their mana points and maxmp,
+    their physical and magic attack modifiers,
+    their available actions,
+    their available hands,
+    whether the character is a player character.
+    """
     def __init__(self, name: str, hp: int, attackdmg: int, magicdmg: int, mana: int, hands: int, actions: Actions,
                  is_player: bool):
+        """The constructor."""
         self.name = name
         self.maxhp = hp
         self.hp = hp
@@ -74,54 +112,40 @@ class Character:
         self.actions = actions
         self.is_player = is_player
 
-    '''
-    def calc_hp(self):
-        self.maxhp = (self.stats.constitution + 5) * self.level
-        self.hp = self.maxhp
-    
-    def get_statvalue(self, stat):
-        if stat == "strength":
-            return self.stats.strength
-        if stat == "dexterity":
-            return self.stats.dexterity
-        if stat == "constitution":
-            return self.stats.constitution
-        if stat == "intelligence":
-            return self.stats.intelligence
-        if stat == "wisdom":
-            return self.stats.wisdom
-        if stat == "charisma":
-            return self.stats.charisma
-
-    def update_actions(self):
-        for spell in self.spellbook.spells:
-            self.actions.append(spell)
-        if self.weapons.mainhand is not None:
-            self.actions.append(self.weapons.mainhand)
-        if self.weapons.offhand is not None:
-            self.actions.append(self.weapons.offhand)
-    '''
-
-    def print_spell(self, index: int, item: Spell):
+    def _print_spell(self, index: int, item: Spell):
         print(str(index) + ". ", item.name + ", Minimum Damage:", str(item.get_damage_low()) +
               ", Maximum Damage:", str(item.get_damage_high()) + ", Cost:", item.get_cost())
 
-    def print_weapon(self, index: int, item: Weapon):
+    def _print_weapon(self, index: int, item: Weapon):
         print(str(index) + ". ", item.name + ", Minimum Damage:", str(item.get_damage_low()) +
               ", Maximum Damage:", str(item.get_damage_high()) + ", Hands:", item.get_hands())
 
     def show_actions(self):
+        """Prints all actions currently available for use.
+
+        Prints the
+        name,
+        damage boundaries,
+        and further specifications (hands, cost)
+        of an action
+        using _print_weapon and _print_spell respectively.
+        """
         i = 1
         print("You have", self.hands, "hands,", self.hp, "/", self.maxhp, "hp and",
               self.mana, "/", self.maxmana, "mana.\n")
         for item in self.actions.actions:
             if type(item) is Spell:
-                self.print_spell(i, item)
+                self._print_spell(i, item)
             elif type(item) is Weapon:
-                self.print_weapon(i, item)
+                self._print_weapon(i, item)
             i += 1
 
     def spell_damage(self, action: Spell):
+        """Handles spellcasting.
+
+        Checks for available mana, decreases mana by cost, and returns the damage of a given spell after printing
+        information about the spells name, its damage, the caster and their leftover mana.
+        """
         if action.get_cost() > self.mana:
             return -1
         self.mana -= action.get_cost()
@@ -134,6 +158,11 @@ class Character:
         return damage
 
     def weapon_damage(self, action: Weapon):
+        """Handles weapons.
+
+        Checks for available hands, and returns the damage of a given weapon after printing
+        information about the weapons name, its damage and the wielder.
+        """
         if action.get_hands() > self.hands:
             return -1
 
@@ -144,6 +173,12 @@ class Character:
         return damage
 
     def generate_damage(self) -> int:
+        """Determines which action to use. Returns the damage of the action, or -1 in case of error.
+
+        Parses player input or chooses random action for non-player characters.
+        Checks for out of bounds inputs.
+        Returns -1 in case of error.
+        """
         if self.is_player is True:
             self.show_actions()
             choice = input("\nChoose Action: ")
@@ -166,6 +201,10 @@ class Character:
         return damage
 
     def receive_damage(self, damage: int):
+        """Lets a character receive damage. Returns leftover hp, or -1 in case of error.
+
+        Also prints a spacer marking a new round of combat after receiving damage.
+        """
         if damage == -1:
             return -1
         self.hp -= damage
@@ -177,16 +216,6 @@ class Character:
 
 
 '''
-class Stats:
-    def __init__(self, strength, dexterity, constitution, intelligence, wisdom, charisma):
-        self.strength = strength
-        self.dexterity = dexterity
-        self.constitution = constitution
-        self.intelligence = intelligence
-        self.wisdom = wisdom
-        self.charisma = charisma
-
-
 class Armory:
     helmet = None
     cuirass = None
@@ -214,30 +243,6 @@ class Armory:
             self.pauldrons = armor
 
 
-class Weapons:
-    mainhand = None
-    offhand = None
-    hands = 2
-
-    def __init__(self, mainhand, offhand):
-        if mainhand is not None:
-            self.equip_mainhand(mainhand)
-        if offhand is not None:
-            self.equip_offhand(offhand)
-
-    def equip_mainhand(self, weapon):
-        if weapon.hands <= self.hands:
-            self.mainhand = weapon
-            self.hands -= weapon.hands
-        return self.hands
-
-    def equip_offhand(self, weapon):
-        if weapon.hands <= self.hands:
-            self.offhand = weapon
-            self.hands -= weapon.hands
-        return self.hands
-
-
 class Armor:
     def __init__(self, name, physdefense, magicdefense, slot):
         self.name = name
@@ -255,11 +260,14 @@ class Gamestate:
 
 
 class Combat:
+    """Handles combat for two characters."""
     def __init__(self, player: Character, enemy: Character):
+        """The constructor."""
         self.current = player
         self.other = enemy
 
     def do_combat(self):
+        """Lets two character clash off until one of them dies."""
         while True:
             status = self.other.receive_damage(self.current.generate_damage())
             if status == -1:
