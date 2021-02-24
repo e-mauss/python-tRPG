@@ -21,11 +21,14 @@ class Spell:
     two integers delimiting a range of damage,
     the cost of a spell.
     """
-    def __init__(self, name: str, damage_low: int, damage_high: int, cost: int):
+
+    def __init__(self, name: str, damage_low: int, damage_high: int, accuracy: int, lethality: int, cost: int):
         """The constructor."""
         self.name = name
         self.damage_low = damage_low
         self.damage_high = damage_high
+        self.accuracy = accuracy
+        self.lethality = lethality
         self.cost = cost
 
     def get_damage_low(self):
@@ -49,11 +52,14 @@ class Weapon:
     two integers delimiting a range of damage,
     the amount of hands needed to use the weapon.
     """
-    def __init__(self, name: str, damage_low: int, damage_high: int, hands: int):
+
+    def __init__(self, name: str, damage_low: int, damage_high: int, accuracy: int, lethality: int, hands: int):
         """The constructor."""
         self.name = name
         self.damage_low = damage_low
         self.damage_high = damage_high
+        self.accuracy = accuracy
+        self.lethality = lethality
         self.hands = hands
 
     def get_damage_low(self):
@@ -71,6 +77,7 @@ class Weapon:
 
 class Actions:
     """Keeps track of all the actions a character can use."""
+
     def __init__(self, *actions):
         """The constructor."""
         self.actions = []
@@ -86,6 +93,68 @@ class Actions:
         return self.actions[index]
 
 
+class Armor:
+    """An armor designed to be equipped in combat.
+
+    Extended by classes Helmet, Cuirass, Cuisses, Gauntlets, Greaves and Pauldrons
+    """
+
+    def __init__(self, name, physprotection, magicprotection, dodge, defense):
+        self.name = name
+        self.physprotection = physprotection
+        self.magicprotection = magicprotection
+        self.dodge = dodge
+        self.defense = defense
+
+
+class Helmet(Armor):
+    pass
+
+
+class Cuirass(Armor):
+    pass
+
+
+class Cuisses(Armor):
+    pass
+
+
+class Gauntlets(Armor):
+    pass
+
+
+class Greaves(Armor):
+    pass
+
+
+class Pauldrons(Armor):
+    pass
+
+
+class Armory:
+    def __init__(self, helmet: Helmet, pauldrons: Pauldrons, cuirass: Cuirass, gauntlets: Gauntlets, cuisses: Cuisses,
+                 greaves: Greaves):
+        self.helmet = helmet
+        self.pauldrons = pauldrons
+        self.cuirass = cuirass
+        self.gauntlets = gauntlets
+        self.cuisses = cuisses
+        self.greaves = greaves
+
+    def get_stats(self):
+        items = [self.helmet, self.pauldrons, self.cuirass, self.gauntlets, self.cuisses, self.greaves]
+        magic_protection = 0
+        phys_protection = 0
+        dodge = 0
+        defense = 0
+        for item in items:
+            magic_protection += item.magicprotection
+            phys_protection += item.physprotection
+            dodge += item.dodge
+            defense += item.defense
+        return magic_protection, phys_protection, dodge, defense
+
+
 class Character:
     """A character which can participate in combat.
 
@@ -94,22 +163,27 @@ class Character:
     their health points and maxhp,
     their mana points and maxmp,
     their physical and magic attack modifiers,
+    their lethality and dodge chance
     their available actions,
     their available hands,
     whether the character is a player character.
     """
-    def __init__(self, name: str, hp: int, attackdmg: int, magicdmg: int, mana: int, hands: int, actions: Actions,
-                 is_player: bool):
+
+    def __init__(self, name: str, hp: int, attackdmg: int, magicdmg: int, accuracy: int, lethality: int,
+                 mana: int, hands: int, actions: Actions, armory: Armory or None, is_player: bool):
         """The constructor."""
         self.name = name
         self.maxhp = hp
         self.hp = hp
         self.attackdmg = attackdmg
         self.magicdmg = magicdmg
+        self.accuracy = accuracy
+        self.lethality = lethality
         self.maxmana = mana
         self.mana = mana
         self.hands = hands
         self.actions = actions
+        self.armory = armory
         self.is_player = is_player
 
     def _print_spell(self, index: int, item: Spell):
@@ -198,58 +272,44 @@ class Character:
             damage = self.weapon_damage(action)
         else:
             damage = -1
-        return damage
 
-    def receive_damage(self, damage: int):
+        to_dodge = action.accuracy - self.accuracy
+        to_crit = action.lethality + self.lethality
+
+        return damage, to_dodge, to_crit
+
+    def receive_damage(self, data: []):
         """Lets a character receive damage. Returns leftover hp, or -1 in case of error.
 
         Also prints a spacer marking a new round of combat after receiving damage.
         """
+        damage = data[0]
+        to_dodge = data[1]
+        to_crit = data[2]
         if damage == -1:
             return -1
-        self.hp -= damage
+
+        dodge = self.armory.get_stats()[2]
+        defense = self.armory.get_stats()[3]
+        to_dodge += dodge
+        to_crit -= defense
+
+        to_hit = random.randrange(0, 99, 1)
+
+        if to_hit < to_dodge:
+            pass
+        elif to_hit > 99-(99-to_dodge)*to_crit/100:
+            self.hp -= damage*1.1
+            print("CRIT!")
+        else:
+            self.hp -= damage
+
         if self.hp < 0:
             self.hp = 0
+
         print(self.name, "has", str(self.hp), "hp left.")
         print("\n==========\n")
         return self.hp
-
-
-'''
-class Armory:
-    helmet = None
-    cuirass = None
-    cuisses = None
-    gauntlets = None
-    greaves = None
-    pauldrons = None
-
-    def __init__(self, *armory):
-        for armor in armory:
-            self.add_armor(armor)
-
-    def add_armor(self, armor):
-        if armor.slot == "helmet":
-            self.helmet = armor
-        elif armor.slot == "cuirass":
-            self.cuirass = armor
-        elif armor.slot == "cuisses":
-            self.cuisses = armor
-        elif armor.slot == "gauntlets":
-            self.gauntlets = armor
-        elif armor.slot == "greaves":
-            self.greaves = armor
-        elif armor.slot == "pauldrons":
-            self.pauldrons = armor
-
-
-class Armor:
-    def __init__(self, name, physdefense, magicdefense, slot):
-        self.name = name
-        self.physdefense = physdefense
-        self.magicdefense = magicdefense
-        self.slot = slot
-'''
 
 
 class Gamestate:
@@ -261,6 +321,7 @@ class Gamestate:
 
 class Combat:
     """Handles combat for two characters."""
+
     def __init__(self, player: Character, enemy: Character):
         """The constructor."""
         self.current = player
